@@ -5,8 +5,6 @@ import pyglet
 import csv
 
 
-
-
 class ArmEnv(object):
     viewer = None
     viewer1 = None
@@ -17,7 +15,7 @@ class ArmEnv(object):
     goal = {'x': 200., 'y': 200., 'r': 40., 'h': 80}  # 此值为初始值，没有实际意义，后续会有新的赋值
     obstacle = {'x': 100, 'y': 50., 'l': 80}  # obstacal为包裹目标立方体
     state_dim = 22
-    action_dim = 2  # 3个自由度
+    action_dim = 3  # 3个自由度
     fig = plt.figure()
     ax = plt.axes(projection='3d')
     ax = fig.add_subplot(111, projection='3d')
@@ -25,9 +23,10 @@ class ArmEnv(object):
 
     def __init__(self):
         self.arm_info = np.zeros(
-            2, dtype=[('l', np.float32), ('r', np.float32)])
+            3, dtype=[('l', np.float32), ('r', np.float32)])
         self.arm_info['l'][0] = 425.0  # /4        # 3 arms length 机械臂所有长度/4
         self.arm_info['l'][1] = 392.43  # /4
+        self.arm_info['l'][1] = 93  # /4
         #self.arm_info['l'][2] = 93/4
         self.arm_info['r'] = np.pi/6    # 3 angles information
 
@@ -38,7 +37,6 @@ class ArmEnv(object):
         self.flag = 0
 
         self.a4l = 125.4  # /4
-        self.a3l = 93  # /4
         self.a2l = 0
         self.a1l = 0
         self.a3z = 0
@@ -94,14 +92,16 @@ class ArmEnv(object):
                 self.goal3D['y'] / self.goal3D['x']) - np.arctan(109.0 / lenth)
 
         # 计算机械臂平面位置
-        (a1l, a2l) = self.arm_info['l']  # radius, arm length
-        (a1r, a2r) = self.arm_info['r']  # radian, angle
+        (a1l, a2l, a3l) = self.arm_info['l']  # radius, arm length
+        (a1r, a2r, a3r) = self.arm_info['r']  # radian, angle
         a0xy = np.array([200., 200.])  # a0 start (x0, y0)
         a1xy = np.array([np.cos(a1r), np.sin(a1r)]) * a1l + \
             a0xy  # a1 end and a2 start (x1, y1)
         a2xy = np.array([np.cos(a1r + a2r), np.sin(a1r + a2r)]
                         ) * a2l + a1xy  # a2 end (x2, y2)
-        a3xy = np.array([1, 0]) * self.a3l + a2xy  # a3 end (x3, y3)
+        # a3 end (x3, y3)
+        a3xy = np.array(
+            [np.cos(a1r + a2r + a3r), np.sin(a1r + a2r + a3r)]) * a3l + a2xy
         finger = np.array([0, -1]) * self.a4l + a3xy  # a4 end (x4, y4)
 
         self.weizi = [a1xy[0]-a0xy[0], a1xy[1] -
@@ -120,7 +120,7 @@ class ArmEnv(object):
         self.a1z = a1xy[1] - 200
         # PID 控制
         #
-        #         # 更新夹角位置（获得输出）
+        # 更新夹角位置（获得输出）
         self.arm_info1['r'][0] += self.u*self.dt
         self.arm_info1['r'][0] %= np.pi * 2  # normalize
         # self.arm_info['r'][0] = np.clip(self.arm_info['r'][0], *[0.1*np.pi, 0.9*np.pi]) #限定旋转角度
@@ -322,14 +322,15 @@ class ArmEnv(object):
         self.obstacle['x'] = self.goal['x']
         self.obstacle['y'] = self.goal['y']
 
-        (a1l, a2l) = self.arm_info['l']  # radius, arm length
-        (a1r, a2r) = self.arm_info['r']  # radian, angle
+        (a1l, a2l, a3l) = self.arm_info['l']  # radius, arm length
+        (a1r, a2r, a3r) = self.arm_info['r']  # radian, angle
         a0xy = np.array([200., 200.])  # a1 start (x0, y0)
         a1xy = np.array([np.cos(a1r), np.sin(a1r)]) * a1l + \
             a0xy  # a1 end and a2 start (x1, y1)
         a2xy = np.array([np.cos(a1r + a2r), np.sin(a1r + a2r)]
                         ) * a2l + a1xy  # a2 end (x2, y2)
-        a3xy = np.array([1, 0]) * self.a3l + a2xy  # a3 end (x3, y3)
+        a3xy = np.array([np.cos(a1r + a2r + a3r), np.sin(a1r + a2r + a3r)]
+                        ) * self.a3l + a2xy  # a3 end (x3, y3)
         finger = np.array([0, -1]) * self.a4l + a3xy  # a4 end (x4, y4)
 
         self.arm_info1['l'] = np.sqrt(np.square(a2xy[0]-200))
@@ -359,8 +360,8 @@ class ArmEnv(object):
     def plot(self):
 
         biasl = 109.0  # / 4
-        (a1l, a2l) = self.arm_info['l']  # radius, arm length
-        (a1r, a2r) = self.arm_info['r']
+        (a1l, a2l, a3l) = self.arm_info['l']  # radius, arm length
+        (a1r, a2r, a3r) = self.arm_info['r']
 
         a1rf = self.arm_info1['r'][0]  # radian, angle
         a0xy = np.array([0, 0])
@@ -372,8 +373,9 @@ class ArmEnv(object):
         # a2 end and a3 start (x2, y2)
         a3xy = np.array([np.cos(a1rf + np.pi / 2),
                         np.sin(a1rf + np.pi / 2)]) * biasl + a2xy
-        a4xy = np.array([np.cos(a1rf), np.sin(a1rf)]) * self.a3l + a3xy
-        a5xy = a4xy  # a3 end (x3, y3)
+        a4xy = np.array([np.cos(a1rf), np.sin(a1rf)]) * \
+            np.cos(a1r+a2r+a3r) * a3l + a3xy
+        a5xy = a4xy + np.cos(a1r+a2r+a3r-np.pi/2) * a3l  # a3 end (x3, y3)
 
         a0z = [0]
         a1z = [self.a1z]
