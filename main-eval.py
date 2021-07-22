@@ -42,8 +42,9 @@ def eval():
         if i % 10 == 0:
             print(i)
 
-        if i > 1000:
+        if i > 2000:
             break
+
 
 
 if __name__ == '__main__':
