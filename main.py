@@ -10,6 +10,7 @@ import csv
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'#去除cpu tensorflow版本报错
 
+
 MAX_EPISODES = 4000
 MAX_EP_STEPS = 200
 ON_TRAIN = True

@@ -11,6 +11,7 @@ MEMORY_CAPACITY = 50000
 BATCH_SIZE = 32
 
 
+
 class DDPG(object):
     def __init__(self, a_dim, s_dim, a_bound,):
         self.memory = np.zeros(

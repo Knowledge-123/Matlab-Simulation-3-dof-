@@ -15,6 +15,7 @@ MAX_EP_STEPS = 200
 #ON_TRAIN = True
 ON_TRAIN = False
 
+
 # set env
 env = ArmEnv()
 s_dim = env.state_dim
